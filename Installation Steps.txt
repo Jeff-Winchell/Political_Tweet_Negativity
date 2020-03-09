@@ -1,0 +1,11 @@
+Before you can download your own data, you need to get a Twitter Developer account (it is free unless you want some special features I am not using)
+
+Official documentation is here:
+https://developer.twitter.com/en/docs/basics/getting-started
+Scroll down to get to the section (How to get started with the Twitter APIs) which will take some time for Twitter to approve your access.
+
+Or Google Twitter API getting started or tutorial to find something more useful to you.
+
+Once you get your Twitter API going, you need to edit the file 
+Twitter_Account_List.r
+to put in the key(s) you get from your approved Twitter developer account.
