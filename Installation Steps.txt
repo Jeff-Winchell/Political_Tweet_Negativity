@@ -9,3 +9,18 @@ Or Google Twitter API getting started or tutorial to find something more useful 
 Once you get your Twitter API going, you need to edit the file 
 Twitter_Account_List.r
 to put in the key(s) you get from your approved Twitter developer account.
+
+Copy all files from this repository to some subdirectory on your computer
+
+While waiting for Twitter to get you access to its API, you can do the rest of the install.
+
+Install SQL Server 2019 for Windows (The Developer's Edition is free if you use it personally, not commercially). There is a LINUX edition. I don't know LINUX so you will need to get help from others where it differs from the Windows version.
+
+SQL Install Instructions TBA
+
+Once you have SQL Server installed and configured, you can run the DDL.sql file within SQL Server to create the empty database, optimizations and custom programs stored in the database. Change the name of the database in the top dozen or so lines if you want the database name to be different.
+
+At this point you need Twitter API working. So don't continue here until that is done.
+
+Then using R, run Get_Politicians.r to query Twitter to give you basic information about the politicians (whose followers you want to analyze). Adjust this file if you have changed the default database name.
+A list of politicians twitter accounts is already included. Adjust it to fit your interests.
