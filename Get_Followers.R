@@ -1,5 +1,5 @@
 options(warn=2,error=recover)
-options(useFancyQuotes=FALSE)
+#options(useFancyQuotes=FALSE)
 
 import_data=function(user,Cursor,Token,Available,Cnt,Cand) {
 	data=httr::content(httr::GET("https://api.twitter.com/1.1/followers/ids.json",

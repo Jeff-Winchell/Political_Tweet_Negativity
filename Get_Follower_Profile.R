@@ -1,5 +1,5 @@
 options(useFancyQuotes=FALSE)
-options(warn=2,error=recover)
+#options(warn=2,error=recover)
 
 source(paste(getSrcDirectory(function(dummy) {dummy}), "./Twitter_Account_List.r", sep=""))  #Change codes in this file to map to your own Twitter application keys. The crazy stuff at the beginning of this line is a hack to get the current directory of the currently executing script.
 source(paste(getSrcDirectory(function(dummy) {dummy}), "./Find_or_Wait_For_Available_Twitter_Account.r", sep=""))  #Source code to shared function that does what it's name implies
