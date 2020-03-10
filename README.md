@@ -7,3 +7,6 @@ Porting this to SQL Server on LINUX will be mostly harmless, but I cannot respon
 
 
 This code is not yet in a state where you can readily reproduce results I have published on Twitter. I am only posting this code at this point to address claims of non-transparency. The eventual goal is making it straightforward enough to replicate this work, though downloading as much Twitter data as I have will take significant run times and disk space.
+
+
+First step is to read and follow the file Installation Steps.txt
