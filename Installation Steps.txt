@@ -39,3 +39,10 @@ You then run this code in SQL like this:
 Exec Mass_Follower_Import 'POTUS' (or whatever politician's twitter handle you are doing)
 
 That SQL code will read all those files (in this case for the subdirectory POTUS) and import the data into SQL Server. It runs much faster than the R code, but you will want to delete all those files on your computer after this runs to get the space back on your hard drive.
+
+Next, to fill in the rest of the data for a user profile you can run the R script get_follower_profile.R
+Change the database name in this script if you aren't using the default database name.
+
+Because of some poor garbage collection/memory leaks in R or some library it is using, I recommend running this as a repeated task (i.e. with task scheduler). The script as is runs for 15 minutes (or sooner if it is done downloading all needed user profiles' info). Then it stops. By running this script as a task repeatedly, each time it stops it releases all memory so the next script can start again using less memory.
+
+This script isn't strictly necessary to get tweets. When you get tweets, if the user profile isn't finished, the tweet code for a given twitter account will also import the full user profile of that tweet. But by using get_follower_profile.r AND get_tweets.r (described after this) they are using different twitter api functions so different rate limits apply.
