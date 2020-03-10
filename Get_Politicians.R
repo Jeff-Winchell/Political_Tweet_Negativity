@@ -11,7 +11,7 @@ Twitter_Token <- httr::Token1.0$new(endpoint=NULL,
                                     credentials=list(oauth_token=Twitter_Account_List$AccessToken[1],oauth_token_secret=Twitter_Account_List$AccessTokenSecret[1])
                                     )
 data=httr::content(httr::GET("https://api.twitter.com/1.1/users/lookup.json",
-                             query=list(screen_name="SenSanders,BernieSanders,MikeBloomberg,SenWarren,EWarren,PeteButtigieg,SenAmyKlobuchar,AmyKlobuchar,JoeBiden,TulsiGabbard,TulsiPress,TomSteyer,POTUS,realDonaldTrump"),
+                             query=list(screen_name="SenSanders,AndrewYang,BernieSanders,MikeBloomberg,SenWarren,EWarren,PeteButtigieg,SenAmyKlobuchar,AmyKlobuchar,JoeBiden,TulsiGabbard,TulsiPress,TomSteyer,POTUS,realDonaldTrump"),
                              httr::config(token=Twitter_Token)
                             ))
 for (i in 1:length(data)) {

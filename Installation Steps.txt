@@ -24,3 +24,5 @@ At this point you need Twitter API working. So don't continue here until that is
 
 Then using R, run Get_Politicians.r to query Twitter to give you basic information about the politicians (whose followers you want to analyze). Adjust this file if you have changed the default database name.
 A list of politicians twitter accounts is already included. Adjust it to fit your interests.
+
+On SQL Server, run Update_Politician_Names.sql to assign a name for each candidate (necessary in your analysis because some politicians may have multiple twitter accounts and you can't be sure if their fans follow one or all of those accounts).
