@@ -26,3 +26,16 @@ Then using R, run Get_Politicians.r to query Twitter to give you basic informati
 A list of politicians twitter accounts is already included. Adjust it to fit your interests.
 
 On SQL Server, run Update_Politician_Names.sql to assign a name for each candidate (necessary in your analysis because some politicians may have multiple twitter accounts and you can't be sure if their fans follow one or all of those accounts).
+
+Run in R the file Get_Followers.R inserting the twitter handles for the politicians you are interested in. 
+
+WARNING: Some politicians have a LOT of followers and this can take hours (or days) if you use this program or just because the Twitter API rate limits are causing you problems. I recommend commenting out all but one line at the bottom for one politician (the one with the least followers) first. Then depending on how well that goes, comment out that one and uncomment another... and so on.
+
+This R program will download all the followers into files on your local commputer. 
+
+You will then need to change the subdirectory name in DDL.sql to the subdirectory where you put all these files/programs. In DDL.sql look for the string C:\\Politics\\Twitter_Politician_Supporters\\ to find where that string needs to be changed to your directory. Use two \\ instead of one for subdirectory speparators. If you needed to make this change, execute the block of code in SQL that starts with Create or Alter Procedure Mass_Follower_Import until you see the line that just says GO about 40 lines later. 
+
+You then run this code in SQL like this: 
+Exec Mass_Follower_Import 'POTUS' (or whatever politician's twitter handle you are doing)
+
+That SQL code will read all those files (in this case for the subdirectory POTUS) and import the data into SQL Server. It runs much faster than the R code, but you will want to delete all those files on your computer after this runs to get the space back on your hard drive.
