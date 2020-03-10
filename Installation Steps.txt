@@ -16,7 +16,7 @@ While waiting for Twitter to get you access to its API, you can do the rest of t
 
 Install SQL Server 2019 for Windows (The Developer's Edition is free if you use it personally, not commercially). There is a LINUX edition. I don't know LINUX so you will need to get help from others where it differs from the Windows version.
 
-SQL Install Instructions TBA
+SQL Install Instructions (see SQL_Server_2019_Install.txt)
 
 Once you have SQL Server installed and configured, you can run the DDL.sql file within SQL Server to create the empty database, optimizations and custom programs stored in the database. Change the name of the database in the top dozen or so lines if you want the database name to be different.
 
@@ -48,3 +48,5 @@ Because of some poor garbage collection/memory leaks in R or some library it is 
 This script isn't strictly necessary to get tweets. When you get tweets, if the user profile isn't finished, the tweet code for a given twitter account will also import the full user profile of that tweet. But by using get_follower_profile.r AND get_tweets.r (described after this) they are using different twitter api functions so different rate limits apply.
 
 Run the R script Get_Tweets.r to get tweets for users. Adjust the database name in it if you changed your default database name. Like Get_follower_profile.R there are memory leak/garbage collections so if you continue to run it long enough without quitting you will use all your memory. So there is a 15 minute time limit within this script. Run the script repeatedly in task scheduler (i.e. every 15 minutes) to avoid this problem. This script also downloads the mentions and hashtags of the tweet. It only downloads tweets since 1/1/2015. If you change increase or descrease the tweet id in the API calls you can get more or less tweets. This script also marks a user inactive if they have no tweets since 2015 (i.e. no tweets were downloaded for that user).
+
+To score the tweets you have in the database (that haven't already been scored), run the SQL script Sentiment.sql. Change the database name in this script if you are using a non-default database name.
