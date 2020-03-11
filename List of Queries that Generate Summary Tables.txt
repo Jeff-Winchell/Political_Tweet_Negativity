@@ -1,0 +1,4 @@
+Sentiment_Summary.sql is the query that creates the main table frequently published in my twitter feed. It shows the sentiment score for all tweets that have been scored and summarizes this information for each candidate (that the tweeters follow.)
+
+Lanes.sql is the query that shows for each candidate, how many Twitter followers they have and what % of their Twitter followers also follow some other candidate(s).
+
