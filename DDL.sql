@@ -135,6 +135,10 @@ Create Function dbo.Char30_To_DateTimeOffset(@Char30 Char(30)) RETURNS DateTimeO
 	Return Cast(Convert(DateTime,SUBSTRING(@Char30,9,3)+SubString(@Char30,5,4)+Right(@Char30,4)+Substring(@Char30,11,9),109) As DateTimeOffset(0))
 End
 Go
+Create Function dbo.Significant_Digits(@Number Float, @Digits Int) Returns Float With SchemaBinding As Begin
+	Return Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
+End
+Go
 Create Or Alter Procedure Insert_Tweet (
 	@Id VarChar(19),
 	@Tweeter_Id VarChar(19),
@@ -364,7 +368,7 @@ Create or Alter Procedure Tweet_Sentiment As Begin
 	Insert Into @Tweet_Sentiment
 	Exec sp_execute_external_script @language=N'Python',
 		@script=N'
-import microsoftml
+import microsoftml, textblob
 sentiment_scores = microsoftml.rx_featurize(
 			data=InputDataSet,
 			report_progress=0,
@@ -372,16 +376,14 @@ sentiment_scores = microsoftml.rx_featurize(
 			ml_transforms=[microsoftml.get_sentiment(cols=dict(MSFT_Sentiment="Text"))])
 OutputDataSet=sentiment_scores[[''Id'',''MSFT_Sentiment'']].copy()
 
-import textblob
-TextBlob_Sentiment=[]
-for index,row in InputDataSet.iterrows():
-	TextBlob_Sentiment= TextBlob_Sentiment + [textblob.TextBlob(row[''Text'']).sentiment.polarity]
+TextBlob_Sentiment=[textblob.TextBlob(row[''Text'']).sentiment.polarity for index,row in InputDataSet.iterrows()]
+
 OutputDataSet[''TextBlob_Sentiment'']=TextBlob_Sentiment
 ',
-		@input_data_1=N'Select Top 100 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (10000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)',
+		@input_data_1=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)',
 		@parallel=1,
 		@params=N'@r_rowsPerRead int',
-		@r_rowsPerRead=250
+		@r_rowsPerRead=10000
 	Update Tweet
 		Set Tweet.MSFT_Sentiment = Sentiment.MSFT_Sentiment,
 			Tweet.TextBlob_Sentiment=Sentiment.TextBlob_Sentiment
