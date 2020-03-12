@@ -25,7 +25,7 @@ Select Candidate,
 				) Temp
 	Group By Candidate
 	Order By Sum(Case When MSFT_Sentiment < 1./3 Then 1. Else 0. End)/Count(*) Desc
-Select Count(*) As [Scored Tweets] 
+Select Count(*) As [Scored Tweets],Count(Distinct Tweeter_Id) As [Scored Tweeters] 
 	From Tweet with (nolock)
 	Where MSFT_Sentiment Is Not Null And TextBlob_Sentiment Is Not Null And Tweet.[Language]='en'
 				And (Exists(Select * From [User] Follower with (nolock) Where In_Reply_To_User=Follower.Id And In_Reply_To_User<>Tweeter_Id)
