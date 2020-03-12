@@ -11,3 +11,5 @@ I prefer installing software to be a few clicks and wait till its done. This is 
 
 
 Your first step is to read and follow the file Installation Steps.txt
+
+After that, you will have some data with scored tweet. The various summaries I made are listed in List of Queries that Generate Summary Tables.txt. They are a small sample of the possibilities you can make. 
