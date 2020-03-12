@@ -68,11 +68,13 @@ Create Index Politician On [User](Politician)
 Go
 Create Index DemCand On [User]([Id]) Where Candidate <> 'Trump' And Candidate<>'Yang' And Candidate <> 'Steyer'
 Go
+Alter Table Tweet Alter Column [Language] VarChar(3) Not Null
+Go
 Create Table Tweet (
 	Id BigInt Not Null Constraint PK_Tweet Primary Key,
 	Tweeter_Id BigInt Null Constraint FK_Tweet_User Foreign Key References [User] On Delete Cascade,
 	[Text] VarChar(1120) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Not Null,
-	[Language] VarChar(3) Null,
+	[Language] VarChar(3) Not Null,
 	Is_Reply Bit Null,
 	In_Reply_To_User BigInt Null,
 	In_Reply_To_Tweet BigInt Null,
@@ -137,7 +139,7 @@ End
 Go
 Create Or Alter Function dbo.Significant_Digits_String(@Number Float, @Digits Int) Returns VarChar(max) With SchemaBinding As Begin
 	Set @Number=Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
-	Return Case 
+	Return Case
 		When @Number-Floor(@Number) = 0 Then LTrim(Str(@Number))
 		Else Left(Cast(@Number As VarChar)+Replicate('0',@Digits),@Digits+Case When @Number>-1 And @Number<1 Then 2 Else 1 End+Case When @Number<0 Then 1 Else 0 End)
 		End
@@ -371,10 +373,15 @@ OutputDataSet=pandas.DataFrame(OutputList,columns=[''Follower''])
 End
 Go
 
-Create or Alter Procedure Tweet_Sentiment As Begin
+Create or Alter Procedure Tweet_Sentiment(@Sample Bit=1) As Begin
 	Set NoCount On
 	Declare @Tweet_Sentiment As Table (Id VarChar(19) Not Null, MSFT_Sentiment Real Not Null, TextBlob_Sentiment Real Not Null)
+	Declare @SQL NVarChar(max)
+	If @Sample=1 Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)'
+	Else Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Option(MAXDOP 4)'
+
 	Insert Into @Tweet_Sentiment
+
 	Exec sp_execute_external_script @language=N'Python',
 		@script=N'
 if (InputDataSet.shape[0]!=0):
@@ -392,7 +399,7 @@ if (InputDataSet.shape[0]!=0):
 else:
 	OuputDataSet=InputDataSet
 ',
-		@input_data_1=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)',
+		@input_data_1=@SQL,
 		@parallel=1,
 		@params=N'@r_rowsPerRead int',
 		@r_rowsPerRead=10000
