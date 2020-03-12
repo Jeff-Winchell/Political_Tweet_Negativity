@@ -135,14 +135,15 @@ Create Function dbo.Char30_To_DateTimeOffset(@Char30 Char(30)) RETURNS DateTimeO
 	Return Cast(Convert(DateTime,SUBSTRING(@Char30,9,3)+SubString(@Char30,5,4)+Right(@Char30,4)+Substring(@Char30,11,9),109) As DateTimeOffset(0))
 End
 Go
-Create Or Alter Function dbo.Significant_Digits_String(@Number Float, @Digits Int) Returns VarChar With SchemaBinding As Begin
-		Return Case 
-		When @Number = 0 Then '0' 
-		When @Number < 1 Then Left(Cast(Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) As VarChar)+Replicate('0',@Digits),@Digits+2)
-		Else Left(Cast(Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) As VarChar)+Replicate('0',@Digits),@Digits)
+Create Or Alter Function dbo.Significant_Digits_String(@Number Float, @Digits Int) Returns VarChar(max) With SchemaBinding As Begin
+	Set @Number=Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
+	Return Case 
+		When @Number-Floor(@Number) = 0 Then LTrim(Str(@Number))
+		Else Left(Cast(@Number As VarChar)+Replicate('0',@Digits),@Digits+Case When @Number>-1 And @Number<1 Then 2 Else 1 End+Case When @Number<0 Then 1 Else 0 End)
 		End
 End
 Go
+
 Create Or Alter Function dbo.Significant_Digits(@Number Float, @Digits Int) Returns Float With SchemaBinding As Begin
 		Return Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
 End
@@ -376,17 +377,20 @@ Create or Alter Procedure Tweet_Sentiment As Begin
 	Insert Into @Tweet_Sentiment
 	Exec sp_execute_external_script @language=N'Python',
 		@script=N'
-import microsoftml, textblob
-sentiment_scores = microsoftml.rx_featurize(
+if (InputDataSet.shape[0]!=0):
+	import microsoftml, textblob
+	sentiment_scores = microsoftml.rx_featurize(
 			data=InputDataSet,
 			report_progress=0,
 			verbose=0,
 			ml_transforms=[microsoftml.get_sentiment(cols=dict(MSFT_Sentiment="Text"))])
-OutputDataSet=sentiment_scores[[''Id'',''MSFT_Sentiment'']].copy()
+	OutputDataSet=sentiment_scores[[''Id'',''MSFT_Sentiment'']].copy()
 
-TextBlob_Sentiment=[textblob.TextBlob(row[''Text'']).sentiment.polarity for index,row in InputDataSet.iterrows()]
+	TextBlob_Sentiment=[textblob.TextBlob(row[''Text'']).sentiment.polarity for index,row in InputDataSet.iterrows()]
 
-OutputDataSet[''TextBlob_Sentiment'']=TextBlob_Sentiment
+	OutputDataSet[''TextBlob_Sentiment'']=TextBlob_Sentiment
+else:
+	OuputDataSet=InputDataSet
 ',
 		@input_data_1=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)',
 		@parallel=1,
