@@ -135,8 +135,16 @@ Create Function dbo.Char30_To_DateTimeOffset(@Char30 Char(30)) RETURNS DateTimeO
 	Return Cast(Convert(DateTime,SUBSTRING(@Char30,9,3)+SubString(@Char30,5,4)+Right(@Char30,4)+Substring(@Char30,11,9),109) As DateTimeOffset(0))
 End
 Go
-Create Function dbo.Significant_Digits(@Number Float, @Digits Int) Returns Float With SchemaBinding As Begin
-	Return Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
+Create Or Alter Function dbo.Significant_Digits_String(@Number Float, @Digits Int) Returns VarChar With SchemaBinding As Begin
+		Return Case 
+		When @Number = 0 Then '0' 
+		When @Number < 1 Then Left(Cast(Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) As VarChar)+Replicate('0',@Digits),@Digits+2)
+		Else Left(Cast(Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) As VarChar)+Replicate('0',@Digits),@Digits)
+		End
+End
+Go
+Create Or Alter Function dbo.Significant_Digits(@Number Float, @Digits Int) Returns Float With SchemaBinding As Begin
+		Return Case When @Number = 0 Then 0 Else Round(@Number ,@Digits-1-Floor(Log10(Abs(@Number)))) End
 End
 Go
 Create Or Alter Procedure Insert_Tweet (
