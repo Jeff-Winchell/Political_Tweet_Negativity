@@ -14,7 +14,7 @@ Twitter_Account=0
 Twitter_Token=NULL
 Start_Time=Sys.time()
 
-SQL="Select Top 500 Cast(Id As VarChar(19)) As Id,Case When Screen_Name Is Null Then 1 Else 0 End As Need_Profile From [User] TableSample (100000 rows) With (nolock) Where Coalesce(Inactive,0)=0 Order By NewId()"
+SQL="Select Top 500 Cast(Id As VarChar(19)) As Id,Case When Screen_Name Is Null Then 1 Else 0 End As Need_Profile From [User] TableSample (10000 rows) With (nolock) Where Tweets>0 And Inactive Is Null Order By NewId()"
 
 while (difftime(Sys.time(),Start_Time,units="mins")<15.0) {
   Users=RevoScaleR::rxImport(RevoScaleR::RxSqlServerData(connectionString=SQL_Server_Connection_String,

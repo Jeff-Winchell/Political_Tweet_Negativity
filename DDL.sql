@@ -19,6 +19,14 @@ Alter FullText StopList GenderSensitive Drop 'him' Language English;
 Alter FullText StopList GenderSensitive Drop 'he' Language English;
 Alter FullText StopList GenderSensitive Drop 'me' Language English;
 Go
+Create Table Population_Adjustment ([Year] Int Not Null Constraint PK_Population_Adjustment Primary Key,Still_Alive_Fraction Numeric(4,3) Not Null)
+Go
+Create Table First_Name ([Year] Int Not Null,[Name] VarChar(15) Not Null, 
+	Gender Char(1) Not Null, [Population] Int Not Null,
+	Constraint PK_First_Name Primary Key([Year],[Name],Gender))
+Go
+Create Table Name_Gender ([Name] VarChar(15) Not Null Constraint PK_Name_Gender Primary Key,Male_Probability Numeric(4,3) Not Null)
+Go
 Create Table [User] (
 	Id BigInt Not Null Constraint PK_User Primary Key,
 	Profile_Done As Case When Screen_Name Is Not Null Then 1 Else 0 End,
@@ -26,11 +34,18 @@ Create Table [User] (
 	Screen_Name VarChar(15) Null,
 	[Name] VarChar(200) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Null,
 	Bio VarChar(640) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Null,
+	Profile_Image_URL VarChar(160) Null,
 	Followers BigInt Null,
 	[Following] BigInt Null,
 	Tweets BigInt Null,
-	[Language] Char(2) Null,
-	Male Bit Null,
+	Zero_Tweets As Case When Tweets=0 Then 1 Else 0 End,
+	[Location] VarChar(640) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Null,
+	Time_Zone VarChar(640) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Null,  --$time_zone$tzinfo_name --https://api.twitter.com/1.1/account/settings.json
+	Geo_Enabled Bit Null,
+	[Language] Char(2) Null, --language
+	Trend_Location_Country VarChar(4) Null, -- $trend_location$countryCode
+	Trend_Location_Name VarChar(640) Null, -- $trend_location$name
+	Male Real Null,
 	Supports VarChar(9) Null,
 	Created_On DateTimeOffSet(0) Null,
 	Inactive Bit Null,
@@ -45,30 +60,18 @@ Create Table [User] (
 	Added2TableOn DateTime Null Constraint DF_User_Added2TableOn Default GetDate()
 	)
 Go
-Create Index Politician_Id On [User](Id) Include(Candidate,Screen_Name,Inactive_Candidate) Where Politician=1
-Go
-Create Index Done_Id On [User](Id) Include (Profile_Done)
-Go
 Create Index Surrogate_Of On [User](Surrogate_Of)
 Go
+Drop FullText Index On [User]
 Create FullText Index
 	On [User](
 		Bio Language English Statistical_Semantics,
 		[Name] Language English Statistical_Semantics)
 	Key Index PK_User
-	With (StopList=GenderSensitive)
+	With (StopList Off)
+	--With (StopList=GenderSensitive)
 Go
 Alter Fulltext Index On [User] Start Full Population;
-Go
-Create Index Supports On [User](Supports)
-Go
-Create Index Screen_Name_Id On [User](Screen_Name,Id) Include ([Name])
-Go
-Create Index Politician On [User](Politician)
-Go
-Create Index DemCand On [User]([Id]) Where Candidate <> 'Trump' And Candidate<>'Yang' And Candidate <> 'Steyer'
-Go
-Alter Table Tweet Alter Column [Language] VarChar(3) Not Null
 Go
 Create Table Tweet (
 	Id BigInt Not Null Constraint PK_Tweet Primary Key,
@@ -91,15 +94,7 @@ Create Table Tweet (
 	Possibly_Truncated Bit Not Null Constraint DF_Possibly Default 0
 ) With (Data_Compression=Page)
 Go
-Create Index In_Reply_To_User On Tweet(In_Reply_To_User) Include(Tweeter_Id,TextBlob_Sentiment,MSFT_Sentiment)
-Go
-Create Index Tweeter_Retweeter_Replyee On Tweet(Tweeter_Id) Include(Id,In_Reply_To_User,Retweet_of_User)
-Go
 Create Index Tweeter_Id On Tweet(Tweeter_Id) Include(Id)
-Go
-Create Index Tweeter_Sentiment On Tweet(Tweeter_Id)
-	Include(MSFT_Sentiment,TextBlob_Sentiment,In_Reply_To_User,Retweet_Of_User,Id)
-	Where TextBlob_Sentiment Is Not Null And MSFT_Sentiment Is Not Null And [Language]='en'
 Go
 Create Table Tweet_Hashtag (
 	Tweet_Id BigInt Not Null Constraint FK_Hashtag_Tweet References Tweet On Delete Cascade,
@@ -121,8 +116,6 @@ Create Table [Following] (
 	Added2TableOn DateTime Null Constraint DF_Following_Added2TableOn Default GetDate(),
 	Constraint Following_PK Primary Key(Follower,Followee)
 	)
-Go
-Create Index FK_Following_User_Followee On [Following](Followee) Include(Added2TableOn)
 Go
 Create Table [User2User] (
 	Follower BigInt Not Null Constraint FK_User2User_User_Follower Foreign Key References [User] On Delete Cascade,
@@ -228,13 +221,16 @@ Create or Alter Procedure Update_User (
 	@Id VarChar(19),
 	@Screen_Name VarChar(15),
 	@Name VarChar(50)=Null,
-	@Bio VarChar(160)=Null,
+	@Bio VarChar(640)=Null,
 	@Followers Int,
 	@Following Int,
 	@Language Char(2),
 	@Tweets Int,
 	@Created_On Char(30),
-	@Verified Bit
+	@Verified Bit,
+	@Geo_Enabled Bit,
+	@Location VarChar(640),
+	@Time_Zone VarChar(640)
 	) As Begin
 	Update [User]
 		Set Screen_Name=@Screen_Name,
@@ -246,10 +242,22 @@ Create or Alter Procedure Update_User (
 			[Language]=@Language,
 			Tweets=@Tweets,
 			Verified=@Verified,
-			Inactive=Case When @Tweets=0 Then 1 Else Null End
+			Inactive=Case When @Tweets=0 Then 1 Else Null End,
+			Geo_Enabled=@Geo_Enabled,
+			[Location]=@Location,
+			Time_Zone=@Time_Zone
 		Where Id=Cast(@Id As BigInt)
 End
 Go
+Create or Alter Procedure Delete_User (
+	@Id VarChar(19)
+	) As Begin
+	Delete From [User2User] 
+		Where Followee=Cast(@Id As BigInt)
+	Delete From [User] Where Id=Cast(@Id As BigInt)
+End
+Go
+
 Create Procedure Insert_Or_Update_User (
 	@Id VarChar(19),
 	@Screen_Name VarChar(15),
@@ -372,13 +380,12 @@ OutputDataSet=pandas.DataFrame(OutputList,columns=[''Follower''])
 		Select * From #Following
 End
 Go
-
 Create or Alter Procedure Tweet_Sentiment(@Sample Bit=1) As Begin
 	Set NoCount On
 	Declare @Tweet_Sentiment As Table (Id VarChar(19) Not Null, MSFT_Sentiment Real Not Null, TextBlob_Sentiment Real Not Null)
 	Declare @SQL NVarChar(max)
-	If @Sample=1 Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)'
-	Else Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Option(MAXDOP 4)'
+	If @Sample=1 Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet with (nolock) Tablesample (100000 rows) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Order By NewID() Option(MAXDOP 4)'
+	Else Set @SQL=N'Select Top 40000 Cast(Id As VarChar(19)) As Id,Text From Tweet with (nolock) Where [Language]=''en'' And MSFT_Sentiment Is Null And TextBlob_Sentiment Is Null Option(MAXDOP 4)'
 
 	Insert Into @Tweet_Sentiment
 
@@ -397,7 +404,7 @@ if (InputDataSet.shape[0]!=0):
 
 	OutputDataSet[''TextBlob_Sentiment'']=TextBlob_Sentiment
 else:
-	OuputDataSet=InputDataSet
+	OuputDataSet=pandas.DataFrame(columns=[''Id'',''MSFT_Sentiment'',''TextBlob_Sentiment''])
 ',
 		@input_data_1=@SQL,
 		@parallel=1,
