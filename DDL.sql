@@ -7,7 +7,7 @@ Create Database Politicians_Twitter_Followers Collate LATIN1_GENERAL_100_CI_AS_S
 Go
 Use Politicians_Twitter_Followers
 Go
-Alter Database Test Set Recovery Simple
+Alter Database Politicians_Twitter_Followers Set Recovery Simple
 Go
 Create FullText Catalog Political_Twitter With Accent_Sensitivity = On As Default
 Go
@@ -62,7 +62,6 @@ Create Table [User] (
 Go
 Create Index Surrogate_Of On [User](Surrogate_Of)
 Go
-Drop FullText Index On [User]
 Create FullText Index
 	On [User](
 		Bio Language English Statistical_Semantics,
