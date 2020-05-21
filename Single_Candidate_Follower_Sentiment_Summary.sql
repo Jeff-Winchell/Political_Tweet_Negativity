@@ -7,21 +7,12 @@ Select Candidate,
 	dbo.Significant_Digits_String(100.*Sum(Case When MSFT_Sentiment < 1./3 Then 1. Else 0. End)/Count(*),2)+'%' As [% Very Low Chance Pos (MSFT)],
 	dbo.Significant_Digits_String(100.*Sum(Case When TextBlob_Sentiment Between -.75 And -.5 Then 1. Else 0. End)/Count(*),2)+'%' As [% Negative (TextBlob)],
 	dbo.Significant_Digits_String(100.*Sum(Case When TextBlob_Sentiment < -.75 Then 1. Else 0. End)/Count(*),2)+'%' As [% Very Negative (TextBlob)]
-	From
-		(Select Distinct Candidate,Tweeter_Id,Tweet.Id,MSFT_Sentiment,TextBlob_Sentiment
-			From Tweet with (nolock)
-					Inner Join 
-				[Following] with (nolock)
-						On Tweeter_Id=Follower
-					Inner Join
-				[User] with (nolock)
-						On [User].Id=Followee
-			Where Computed=1
-				And [User].Politician=1
-				) Temp
+	From dbo.Tweet_Score with (nolock)
+			Inner Join 
+		(Select Follower,Min(Candidate) As Candidate
+			From dbo.Candidate_Follower with (nolock)
+			Group By Follower
+			Having Count(*)=1) One_Cand 
+				On Tweeter_Id=Follower
 	Group By Candidate
-	Order By Sum(Case When MSFT_Sentiment < 1./3 Then 1. Else 0. End)/Count(*) Desc
-
-Select Count(*) As [Scored Tweets],Count(Distinct Tweeter_Id) As [Scored Tweeters] 
-	From Tweet with (nolock)
-	Where Computed=1
+	Order By Sum(Case When MSFT_Sentiment < 1./3 Then 1. Else 0. End)/Count(*) Descs

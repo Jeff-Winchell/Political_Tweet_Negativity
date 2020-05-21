@@ -1,0 +1,16 @@
+Install Textblob sentiment analysis library:
+
+Go to this page
+https://docs.microsoft.com/en-us/sql/advanced-analytics/package-management/install-additional-python-packages-on-sql-server?view=sql-server-ver15
+
+Do the steps in this section "Install sqlmlutils on the client computer"
+
+Do the steps in this section "Add a Python package on SQL Server" except change text-tools to textblob and in the connection=sqlmlutils line, remove everything except database="database" and put in the name of your database that you created using the DDL.SQL SQL Script.
+
+
+Be sure to open tcp port 1433 in firewall settings and turn on SQL Server tcp listener
+
+# of cores/2 for MAXDOP
+Adjust memory when some processes take too much (or are using too little)
+
+PROCESS_POOL_SQLSATELLITE_GROWTH rlauncher.config

@@ -1,10 +1,11 @@
-# This program is necessary to deal with rate limiting in Twitter's API. You can only issue so many requests of a given type in a given time frame.
-# See https://developer.twitter.com/en/docs/basics/rate-limits and https://developer.twitter.com/en/docs/basics/rate-limiting for details
 Find_or_Wait_For_Available_Twitter_Account=function (Twitter_Account,Twitter_Token,Rate_Requests_Available,Requests_Available,Request_Type) {
 
-  # This program doesn't explicitly track all known requests so using small non-zero number immediately below SEEMS to account for those untracked requests
-  if ((Requests_Available<=3)|(Rate_Requests_Available<=4)) {
-
+  if ((Rate_Requests_Available<=4)|(Requests_Available<=3)) {
+    # This program is necessary to deal with rate limiting in Twitter's API. You can only issue so many requests of a given type in a given time frame.
+    # See https://developer.twitter.com/en/docs/basics/rate-limits and https://developer.twitter.com/en/docs/basics/rate-limiting for details
+    
+    # This program doesn't explicitly track all known requests so using small non-zero number immediately below SEEMS to account for those untracked requests
+    
     #Find a different app or wait until Twitter requests are available
     Wait_Seconds=900/length(Twitter_Account_List)
     for (i in 1:(nrow(Twitter_Account_List))) {

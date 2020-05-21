@@ -9,16 +9,6 @@ Use Politicians_Twitter_Followers
 Go
 Alter Database Politicians_Twitter_Followers Set Recovery Simple
 Go
-Create FullText Catalog Political_Twitter With Accent_Sensitivity = On As Default
-Go
-Create FullText StopList GenderSensitive From System Stoplist;
-Go
-Alter FullText StopList GenderSensitive Drop 'his' Language English;
-Alter FullText StopList GenderSensitive Drop 'her' Language English;
-Alter FullText StopList GenderSensitive Drop 'him' Language English;
-Alter FullText StopList GenderSensitive Drop 'he' Language English;
-Alter FullText StopList GenderSensitive Drop 'me' Language English;
-Go
 Create Table Population_Adjustment ([Year] Int Not Null Constraint PK_Population_Adjustment Primary Key,Still_Alive_Fraction Numeric(4,3) Not Null)
 Go
 Create Table First_Name ([Year] Int Not Null,[Name] VarChar(15) Not Null, 
@@ -62,22 +52,13 @@ Create Table [User] (
 Go
 Create Index Surrogate_Of On [User](Surrogate_Of)
 Go
-Create FullText Index
-	On [User](
-		Bio Language English Statistical_Semantics,
-		[Name] Language English Statistical_Semantics)
-	Key Index PK_User
-	With (StopList Off)
-	--With (StopList=GenderSensitive)
-Go
-Alter Fulltext Index On [User] Start Full Population;
-Go
 Create Table Tweet (
 	Id BigInt Not Null Constraint PK_Tweet Primary Key,
 	Tweeter_Id BigInt Null Constraint FK_Tweet_User Foreign Key References [User] On Delete Cascade,
 	[Text] VarChar(1120) Collate LATIN1_GENERAL_100_CI_AS_SC_UTF8 Not Null,
 	[Language] VarChar(3) Not Null,
 	Is_Reply Bit Null,
+	Computed Bit Null, -- Redundant (not calculated due to Indexed view requirements)=MSFT_Sentiment is Not Null and Textblob_sentiment is not null and language='en'
 	In_Reply_To_User BigInt Null,
 	In_Reply_To_Tweet BigInt Null,
 	Retweet_Of_Tweet BigInt Null,
@@ -113,6 +94,7 @@ Create Table [Following] (
 	Follower BigInt Not Null Constraint FK_Following_User_Follower Foreign Key References [User] On Delete Cascade,
 	Followee BigInt Not Null Constraint FK_Following_User_Followee Foreign Key References [User],
 	Added2TableOn DateTime Null Constraint DF_Following_Added2TableOn Default GetDate(),
+	Candidate VarChar(9) Null, -- denormalized from [User] table
 	Constraint Following_PK Primary Key(Follower,Followee)
 	)
 Go
@@ -340,7 +322,7 @@ End
 Go
 
 -- Change this path to where you have generated your files
-Create or Alter Procedure Mass_Follower_Import(@Screen_Name VarChar(15)) As Begin
+Create or Alter Procedure Mass_Follower_Import(@Screen_Name VarChar(15),@Candidate VarChar(9)) As Begin
 	Declare @Following As Table (Follower BigInt Not Null)
 	Declare @PythonScript NVarChar(max)
 	Set @PythonScript=N'
@@ -375,8 +357,8 @@ OutputDataSet=pandas.DataFrame(OutputList,columns=[''Follower''])
 		Where Not Exists(Select *
 							From [Following] B
 							Where A.Follower=B.Follower And B.Followee=@Followee)
-	Insert Into [Following] (Follower,Followee)
-		Select * From #Following
+	Insert Into [Following] (Follower,Followee,Candidate)
+		Select *,@Candidate From #Following
 End
 Go
 Create or Alter Procedure Tweet_Sentiment(@Sample Bit=1) As Begin
@@ -389,7 +371,8 @@ Create or Alter Procedure Tweet_Sentiment(@Sample Bit=1) As Begin
 	Insert Into @Tweet_Sentiment
 
 	Exec sp_execute_external_script @language=N'Python',
-		@script=N'
+		@script=N'import torch
+print(torch.cuda.is_available())'
 if (InputDataSet.shape[0]!=0):
 	import microsoftml, textblob
 	sentiment_scores = microsoftml.rx_featurize(
@@ -411,7 +394,8 @@ else:
 		@r_rowsPerRead=10000
 	Update Tweet
 		Set Tweet.MSFT_Sentiment = Sentiment.MSFT_Sentiment,
-			Tweet.TextBlob_Sentiment=Sentiment.TextBlob_Sentiment
+			Tweet.TextBlob_Sentiment=Sentiment.TextBlob_Sentiment,
+			Computed=1
 		From @Tweet_Sentiment Sentiment
 			Inner Join
 		Tweet
