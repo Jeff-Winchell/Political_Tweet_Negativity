@@ -1,5 +1,5 @@
 # Political_Tweet_Negativity
- Evaluates the negativity of tweets in relation to candidate(s) that the tweeter follows
+ Evaluates the negativity of tweets in relation to candidate(s) that the tweeter follows - results from this study covered in Salon and the documentary film Bernie Blackout.
 
 The code relies heavily on the features of SQL Server 2019 on Windows and its integration with python, R (and soon, Java). 
 Porting this to SQL Server on LINUX will be mostly harmless, but I can't help with LINUX issues.
